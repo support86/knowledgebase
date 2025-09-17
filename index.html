@@ -4,51 +4,17 @@
 <meta charset="UTF-8">
 <title>Knowledgebase der Poolakademie.de</title>
 <style>
-body {
-  font-family: Arial, sans-serif;
-  margin:0; padding:0;
-  background:#f0f8ff;
-  color:#003366;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  min-height:100vh;
-}
-
-#app { width:100%; max-width:800px; padding:20px; box-sizing:border-box; }
-
+body { font-family: Arial; margin:0; padding:0; background:#f0f8ff; color:#003366; display:flex; justify-content:center; align-items:center; min-height:100vh; }
+#app { width:100%; max-width:800px; padding:20px; }
 h1,h2 { text-align:center; color:#0077c8; margin-top:0; }
-
-.node, .question, .solution {
-  margin:10px 0;
-  padding:10px;
-  border-radius:8px;
-  background:#e0f7ff;
-  box-shadow:0 2px 5px rgba(0,0,0,0.2);
-  text-align:center;
-}
-
-button {
-  margin:5px;
-  padding:6px 12px;
-  border:none;
-  border-radius:6px;
-  background:#00b3b3;
-  color:white;
-  cursor:pointer;
-  font-weight:bold;
-}
-
+.node,.question,.solution { margin:10px 0; padding:10px; border-radius:8px; background:#e0f7ff; box-shadow:0 2px 5px rgba(0,0,0,0.2); text-align:center; }
+button { margin:5px; padding:6px 12px; border:none; border-radius:6px; background:#00b3b3; color:white; cursor:pointer; font-weight:bold; }
 button:hover { background:#007f7f; }
-
 input { padding:6px 8px; border-radius:5px; border:1px solid #0077c8; margin-bottom:10px; width:100%; max-width:300px; box-sizing:border-box; }
-
 </style>
-
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
 </head>
 <body>
 <div id="app">
@@ -99,7 +65,7 @@ let path = [];
 auth.onAuthStateChanged(user => {
     currentUser = user;
     if(user){
-        if(user.email === "admin@poolakademie.de" && document.getElementById("password").value === "admin."){
+        if(user.email === "admin@poolakademie.de"){
             isAdmin = true;
             showAdmin();
         } else {
