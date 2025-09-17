@@ -21,6 +21,7 @@ input { padding:6px 8px; border-radius:5px; border:1px solid #0077c8; margin-bot
 <div id="app">
 <h1>Knowledgebase der Poolakademie.de</h1>
 
+<!-- Login / Registrierung -->
 <div id="auth">
 <h2>Anmelden / Registrieren</h2>
 <input id="email" type="email" placeholder="E-Mail">
@@ -29,12 +30,14 @@ input { padding:6px 8px; border-radius:5px; border:1px solid #0077c8; margin-bot
 <button onclick="register()">Registrieren</button>
 </div>
 
+<!-- Endnutzer Baum -->
 <div id="treeContainer" style="display:none;">
 <h2>Knowledgebase</h2>
 <div id="tree"></div>
 <button onclick="goBack()">Zurück</button>
 </div>
 
+<!-- Admin Editor -->
 <div id="editor" style="display:none;">
 <h2>Entwickler-Editor</h2>
 <button onclick="addRootNode()">Neue Kategorie</button>
@@ -68,6 +71,7 @@ let path = [];
 auth.onAuthStateChanged(user => {
     currentUser = user;
     if(user){
+        document.getElementById("auth").style.display="none";
         if(user.email === "admin@poolakademie.de"){
             isAdmin = true;
             showAdmin();
@@ -75,8 +79,8 @@ auth.onAuthStateChanged(user => {
             isAdmin = false;
             showUser();
         }
-        document.getElementById("auth").style.display="none";
     } else {
+        // Login-Formular immer sichtbar
         document.getElementById("auth").style.display="block";
         document.getElementById("treeContainer").style.display="none";
         document.getElementById("editor").style.display="none";
