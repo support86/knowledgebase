@@ -4,11 +4,15 @@
 <meta charset="UTF-8">
 <title>Knowledgebase der Poolakademie.de</title>
 <style>
-  body { font-family: Arial, sans-serif; padding: 20px; }
-  h1,h2 { margin-top:0; }
-  .question, .solution { margin: 20px 0; }
-  button { margin: 5px; padding: 10px 15px; }
-  #tree, #editorContent { margin-top:20px; white-space: pre-wrap; }
+  body { font-family: "Arial", sans-serif; padding: 20px; background:#f0f8ff; color:#003366; }
+  h1,h2 { margin-top:0; color:#0077c8; }
+  .question, .solution { margin: 20px 0; padding:15px; border-radius:8px; background:#e0f7ff; box-shadow:0 2px 5px rgba(0,0,0,0.2);}
+  button { margin: 5px; padding: 10px 20px; border:none; border-radius:6px; background:#00b3b3; color:white; cursor:pointer; font-weight:bold; transition:0.3s;}
+  button:hover { background:#007f7f; }
+  #tree, #editorContent { margin-top:20px; }
+  .node { border:1px solid #00b3b3; padding:10px; border-radius:8px; margin:10px 0; background:#e6f7f7; }
+  select { padding:5px 10px; border-radius:5px; border:1px solid #0077c8; margin-bottom:15px; }
+  input { padding:5px 10px; margin:5px 0; border-radius:5px; border:1px solid #0077c8; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -19,10 +23,10 @@
 
 <div id="auth">
   <h2>Anmelden / Registrieren</h2>
-  <input id="email" type="email" placeholder="E-Mail">
-  <input id="password" type="password" placeholder="Passwort">
-  <button onclick="register()">Registrieren</button>
+  <input id="email" type="email" placeholder="E-Mail"><br>
+  <input id="password" type="password" placeholder="Passwort"><br>
   <button onclick="login()">Anmelden</button>
+  <button onclick="register()">Registrieren</button>
 </div>
 
 <div id="treeContainer" style="display:none;">
@@ -36,7 +40,7 @@
 
 <div id="editor" style="display:none;">
   <h2>Entwickler-Editor</h2>
-  <button onclick="addRootCategory()">Neue Kategorie</button>
+  <button onclick="addRootNode()">Neue Kategorie</button>
   <div id="editorContent"></div>
 </div>
 
@@ -53,8 +57,9 @@
   const db = firebase.database();
 
   let currentUser = null;
+  let isAdmin = false;
   let tree = {};
-  let path = []; // Pfad für Endnutzer Baumnavigation
+  let path = [];
 
   // ----------------- Auth -----------------
   auth.onAuthStateChanged(user => {
@@ -62,14 +67,15 @@
     if(user){
       if(!user.emailVerified){
         alert("Bitte bestätige deine E-Mail");
+        auth.signOut();
         return;
       }
-      if(user.email === "dein.email@poolakademie.de"){ // Entwickler
-        document.getElementById("editor").style.display="block";
-        loadTreeEditor();
-      } else { // Endnutzer
-        document.getElementById("treeContainer").style.display="block";
-        loadTree();
+      if(user.email === "admin@poolakademie.de"){
+        isAdmin = true;
+        showAdmin();
+      } else {
+        isAdmin = false;
+        showUser();
       }
       document.getElementById("auth").style.display="none";
     } else {
@@ -83,7 +89,7 @@
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
     auth.createUserWithEmailAndPassword(email,password)
-      .then(u=> u.user.sendEmailVerification())
+      .then(u => u.user.sendEmailVerification())
       .then(()=> alert("Bestätigungs-Mail gesendet"))
       .catch(console.error);
   }
@@ -91,14 +97,18 @@
   function login(){
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
-    auth.signInWithEmailAndPassword(email,password)
-      .catch(console.error);
+    auth.signInWithEmailAndPassword(email,password).catch(console.error);
   }
 
   // ----------------- Endnutzer -----------------
+  function showUser(){
+    document.getElementById("treeContainer").style.display="block";
+    loadTree();
+  }
+
   function loadTree(){
     db.ref('tree').once('value').then(snap=>{
-      tree = snap.val() || {};
+      tree = snap.val() || {question:{de:"Noch kein Baum",en:"No tree"}};
       path = [];
       renderCurrent();
     });
@@ -127,6 +137,7 @@
       noBtn.textContent = lang==="de"?"Nein":"No";
       noBtn.onclick = () => { path.push("no"); renderCurrent(); };
       container.appendChild(noBtn);
+
     } else if(node.solution){
       const sol = document.createElement("div");
       sol.className="solution";
@@ -136,33 +147,71 @@
   }
 
   function goBack(){
-    if(path.length>0){
-      path.pop();
-      renderCurrent();
-    }
+    if(path.length>0){ path.pop(); renderCurrent(); }
   }
 
-  // ----------------- Entwickler -----------------
-  function loadTreeEditor(){
+  // ----------------- Admin Editor -----------------
+  function showAdmin(){
+    document.getElementById("editor").style.display="block";
+    loadEditor();
+  }
+
+  function loadEditor(){
     db.ref('tree').once('value').then(snap=>{
       tree = snap.val() || {};
-      updateEditorContent();
+      renderEditor();
     });
   }
 
-  function updateEditorContent(){
-    const editor = document.getElementById("editorContent");
-    editor.innerHTML = JSON.stringify(tree, null,2);
+  function renderEditor(node=tree, container=document.getElementById("editorContent")){
+    container.innerHTML="";
+    function createNodeDiv(n,parent){
+      const div = document.createElement("div");
+      div.className="node";
+
+      if(n.question){
+        const q = document.createElement("div");
+        q.textContent = `Q: ${n.question.de} / ${n.question.en}`;
+        div.appendChild(q);
+
+        const yesBtn = document.createElement("button");
+        yesBtn.textContent="Ja-Antwort hinzufügen";
+        yesBtn.onclick=()=> { n.yes={question:{de:"Neue Frage",en:"New question"}}; saveTree(); renderEditor(); };
+        div.appendChild(yesBtn);
+
+        const noBtn = document.createElement("button");
+        noBtn.textContent="Nein-Antwort hinzufügen";
+        noBtn.onclick=()=> { n.no={question:{de:"Neue Frage",en:"New question"}}; saveTree(); renderEditor(); };
+        div.appendChild(noBtn);
+
+      } else if(n.solution){
+        const sol = document.createElement("div");
+        sol.textContent = `Solution: ${n.solution.de} / ${n.solution.en}`;
+        div.appendChild(sol);
+      }
+
+      const addSolBtn = document.createElement("button");
+      addSolBtn.textContent="Lösung hinzufügen";
+      addSolBtn.onclick=()=>{ n.solution={de:"Neue Lösung",en:"New solution"}; saveTree(); renderEditor(); };
+      div.appendChild(addSolBtn);
+
+      container.appendChild(div);
+
+      if(n.yes) createNodeDiv(n.yes,n);
+      if(n.no) createNodeDiv(n.no,n);
+    }
+
+    createNodeDiv(node,null);
   }
 
-  function addRootCategory(){
-    const name = prompt("Name der Kategorie (de|en, z.B. Poolpflege|Pool care)");
-    if(!name) return;
-    const [de,en] = name.split("|");
-    if(!tree.categories) tree.categories={};
-    tree.categories[de] = {question: {de,de, en:en}, yes:null, no:null};
+  function addRootNode(){
+    tree = {question:{de:"Neue Kategorie",en:"New category"}};
+    saveTree();
+    renderEditor();
+  }
+
+  function saveTree(){
     db.ref('tree').set(tree);
-    updateEditorContent();
   }
 </script>
 </body>
