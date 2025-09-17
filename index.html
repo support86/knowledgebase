@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <title>Knowledgebase der Poolakademie.de</title>
 <style>
-  body {
-    font-family: "Arial", sans-serif;
+body {
+    font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
     background: #f0f8ff;
@@ -14,70 +14,52 @@
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-  }
+}
 
-  #app {
+#app {
     width: 100%;
     max-width: 800px;
     padding: 20px;
     box-sizing: border-box;
-  }
+}
 
-  h1, h2 {
+h1, h2 {
     margin-top: 0;
     color: #0077c8;
     text-align: center;
-  }
+}
 
-  .question, .solution {
-    margin: 20px 0;
-    padding: 15px;
+.node, .question, .solution {
+    margin: 10px 0;
+    padding: 10px;
     border-radius: 8px;
     background: #e0f7ff;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     text-align: center;
-  }
+}
 
-  button {
+button {
     margin: 5px;
-    padding: 8px 16px;
+    padding: 6px 12px;
     border: none;
     border-radius: 6px;
     background: #00b3b3;
     color: white;
     cursor: pointer;
     font-weight: bold;
-    font-size: 14px;
-    transition: 0.3s;
-  }
+}
 
-  button:hover {
-    background: #007f7f;
-  }
+button:hover { background: #007f7f; }
 
-  #tree, #editorContent {
-    margin-top: 20px;
-  }
-
-  .node {
-    border: 1px solid #00b3b3;
-    padding: 10px;
-    border-radius: 8px;
-    margin: 10px 0;
-    background: #e6f7f7;
-  }
-
-  select, input {
-    padding: 8px 10px;
+input, select {
+    padding: 6px 8px;
     border-radius: 5px;
     border: 1px solid #0077c8;
-    margin-bottom: 15px;
-    display: block;
+    margin-bottom: 10px;
     width: 100%;
     max-width: 300px;
-    font-size: 14px;
     box-sizing: border-box;
-  }
+}
 </style>
 
 <!-- Firebase compat Versionen -->
@@ -88,205 +70,210 @@
 </head>
 <body>
 <div id="app">
-  <h1>Knowledgebase der Poolakademie.de</h1>
+<h1>Knowledgebase der Poolakademie.de</h1>
 
-  <div id="auth">
-    <h2>Anmelden / Registrieren</h2>
-    <input id="email" type="email" placeholder="E-Mail">
-    <input id="password" type="password" placeholder="Passwort">
-    <button onclick="login()">Anmelden</button>
-    <button onclick="register()">Registrieren</button>
-  </div>
+<div id="auth">
+<h2>Anmelden / Registrieren</h2>
+<input id="email" type="email" placeholder="E-Mail">
+<input id="password" type="password" placeholder="Passwort">
+<button onclick="login()">Anmelden</button>
+<button onclick="register()">Registrieren</button>
+</div>
 
-  <div id="treeContainer" style="display:none;">
-    <select id="language" onchange="renderCurrent()">
-      <option value="de">Deutsch</option>
-      <option value="en">English</option>
-    </select>
-    <div id="tree"></div>
-    <button onclick="goBack()">Zurück</button>
-  </div>
+<div id="treeContainer" style="display:none;">
+<select id="language" onchange="renderCurrent()">
+<option value="de">Deutsch</option>
+<option value="en">English</option>
+</select>
+<div id="tree"></div>
+<button onclick="goBack()">Zurück</button>
+</div>
 
-  <div id="editor" style="display:none;">
-    <h2>Entwickler-Editor</h2>
-    <button onclick="addRootNode()">Neue Kategorie</button>
-    <div id="editorContent"></div>
-  </div>
+<div id="editor" style="display:none;">
+<h2>Entwickler-Editor</h2>
+<button onclick="addRootNode()">Neue Kategorie</button>
+<div id="editorContent"></div>
+</div>
 </div>
 
 <script>
-  // ----------------- Firebase Setup -----------------
-  const firebaseConfig = {
-    apiKey: "AIzaSyCldSSywGke3twOrve-beuJ4KKQqBaCMRo",
-    authDomain: "poolakademie-knowledgebase.firebaseapp.com",
-    projectId: "poolakademie-knowledgebase",
-    storageBucket: "poolakademie-knowledgebase.firebasestorage.app",
-    messagingSenderId: "907800259546",
-    appId: "1:907800259546:web:9e2cd30278ba36551caee3",
-    databaseURL: "https://poolakademie-knowledgebase-default-rtdb.firebaseio.com"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.database();
+// Firebase Setup
+const firebaseConfig = {
+  apiKey: "AIzaSyCldSSywGke3twOrve-beuJ4KKQqBaCMRo",
+  authDomain: "poolakademie-knowledgebase.firebaseapp.com",
+  projectId: "poolakademie-knowledgebase",
+  storageBucket: "poolakademie-knowledgebase.firebasestorage.app",
+  messagingSenderId: "907800259546",
+  appId: "1:907800259546:web:9e2cd30278ba36551caee3",
+  databaseURL: "https://poolakademie-knowledgebase-default-rtdb.firebaseio.com"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
 
-  let currentUser = null;
-  let isAdmin = false;
-  let tree = {};
-  let path = [];
+let currentUser = null;
+let isAdmin = false;
+let tree = {};
+let path = [];
 
-  // ----------------- Auth -----------------
-  auth.onAuthStateChanged(user => {
+// Auth
+auth.onAuthStateChanged(user => {
     currentUser = user;
     if(user){
-      if(user.email === "admin@poolakademie.de"){
-        isAdmin = true;
-        showAdmin();
-      } else {
-        isAdmin = false;
-        showUser();
-      }
-      document.getElementById("auth").style.display="none";
+        if(user.email === "admin@poolakademie.de"){
+            isAdmin = true;
+            showAdmin();
+        } else {
+            isAdmin = false;
+            showUser();
+        }
+        document.getElementById("auth").style.display="none";
     } else {
-      document.getElementById("auth").style.display="block";
-      document.getElementById("treeContainer").style.display="none";
-      document.getElementById("editor").style.display="none";
+        document.getElementById("auth").style.display="block";
+        document.getElementById("treeContainer").style.display="none";
+        document.getElementById("editor").style.display="none";
     }
-  });
+});
 
-  function register(){
+function register(){
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
     if(password.length < 6){ alert("Passwort mindestens 6 Zeichen"); return; }
     auth.createUserWithEmailAndPassword(email,password)
-      .then(() => alert("Registrierung erfolgreich!"))
-      .catch(e => alert(e.message));
-  }
+      .then(()=>alert("Registrierung erfolgreich!"))
+      .catch(e=>alert(e.message));
+}
 
-  function login(){
+function login(){
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
     auth.signInWithEmailAndPassword(email,password)
-      .catch(e => alert(e.message));
-  }
+      .catch(e=>alert(e.message));
+}
 
-  // ----------------- Endnutzer -----------------
-  function showUser(){
+// Endnutzer
+function showUser(){
     document.getElementById("treeContainer").style.display="block";
     loadTree();
-  }
+}
 
-  function loadTree(){
+function loadTree(){
     db.ref('tree').once('value').then(snap=>{
-      tree = snap.val() || {question:{de:"Noch kein Baum",en:"No tree"}};
-      path = [];
-      renderCurrent();
+        tree = snap.val() || {};
+        path = [];
+        renderCurrent();
     });
-  }
+}
 
-  function renderCurrent(){
+function renderCurrent(){
     const lang = document.getElementById("language").value;
     const container = document.getElementById("tree");
     container.innerHTML="";
     let node = tree;
     for(let i of path) node = node[i];
+
     if(!node) return;
 
     if(node.question){
-      const q = document.createElement("div");
-      q.className="question";
-      q.textContent = node.question[lang] || node.question["de"];
-      container.appendChild(q);
-
-      const yesBtn = document.createElement("button");
-      yesBtn.textContent = lang==="de"?"Ja":"Yes";
-      yesBtn.onclick = () => { path.push("yes"); renderCurrent(); };
-      container.appendChild(yesBtn);
-
-      const noBtn = document.createElement("button");
-      noBtn.textContent = lang==="de"?"Nein":"No";
-      noBtn.onclick = () => { path.push("no"); renderCurrent(); };
-      container.appendChild(noBtn);
-
-    } else if(node.solution){
-      const sol = document.createElement("div");
-      sol.className="solution";
-      sol.textContent = node.solution[lang] || node.solution["de"];
-      container.appendChild(sol);
-    }
-  }
-
-  function goBack(){ if(path.length>0){ path.pop(); renderCurrent(); } }
-
-  // ----------------- Admin Editor -----------------
-  function showAdmin(){
-    document.getElementById("editor").style.display="block";
-    loadEditor();
-  }
-
-  function loadEditor(){
-    db.ref('tree').once('value').then(snap=>{
-      tree = snap.val() || {};
-      renderEditor();
-    });
-  }
-
-  function renderEditor(node=tree, container=document.getElementById("editorContent")){
-    container.innerHTML="";
-    function createNodeDiv(n){
-      const div = document.createElement("div");
-      div.className="node";
-
-      if(n.question){
-        // Kategorie umbenennen
-        const qInputDe = document.createElement("input");
-        qInputDe.value = n.question.de;
-        qInputDe.onchange = () => { n.question.de = qInputDe.value; saveTree(); };
-        div.appendChild(qInputDe);
-
-        const qInputEn = document.createElement("input");
-        qInputEn.value = n.question.en;
-        qInputEn.onchange = () => { n.question.en = qInputEn.value; saveTree(); };
-        div.appendChild(qInputEn);
+        const q = document.createElement("div");
+        q.className="question";
+        q.textContent = node.question[lang] || node.question["de"];
+        container.appendChild(q);
 
         const yesBtn = document.createElement("button");
-        yesBtn.textContent="Ja-Antwort hinzufügen";
-        yesBtn.onclick=()=> { n.yes={question:{de:"Neue Frage",en:"New question"}}; saveTree(); renderEditor(); };
-        div.appendChild(yesBtn);
+        yesBtn.textContent = lang==="de"?"Ja":"Yes";
+        yesBtn.onclick = () => { path.push("yes"); renderCurrent(); };
+        container.appendChild(yesBtn);
 
         const noBtn = document.createElement("button");
-        noBtn.textContent="Nein-Antwort hinzufügen";
-        noBtn.onclick=()=> { n.no={question:{de:"Neue Frage",en:"New question"}}; saveTree(); renderEditor(); };
-        div.appendChild(noBtn);
+        noBtn.textContent = lang==="de"?"Nein":"No";
+        noBtn.onclick = () => { path.push("no"); renderCurrent(); };
+        container.appendChild(noBtn);
+    } else if(node.solution){
+        const sol = document.createElement("div");
+        sol.className="solution";
+        sol.textContent = node.solution[lang] || node.solution["de"];
+        container.appendChild(sol);
+    }
+}
 
-      } else if(n.solution){
-        const solInputDe = document.createElement("input");
-        solInputDe.value = n.solution.de;
-        solInputDe.onchange = () => { n.solution.de = solInputDe.value; saveTree(); };
-        div.appendChild(solInputDe);
+function goBack(){
+    if(path.length>0){ path.pop(); renderCurrent(); }
+}
 
-        const solInputEn = document.createElement("input");
-        solInputEn.value = n.solution.en;
-        solInputEn.onchange = () => { n.solution.en = solInputEn.value; saveTree(); };
-        div.appendChild(solInputEn);
-      }
+// Admin
+function showAdmin(){
+    document.getElementById("editor").style.display="block";
+    loadEditor();
+}
 
-      const addSolBtn = document.createElement("button");
-      addSolBtn.textContent="Lösung hinzufügen";
-      addSolBtn.onclick=()=>{ n.solution={de:"Neue Lösung",en:"New solution"}; saveTree(); renderEditor(); };
-      div.appendChild(addSolBtn);
+function loadEditor(){
+    db.ref('tree').once('value').then(snap=>{
+        tree = snap.val() || {};
+        renderEditor();
+    });
+}
 
-      container.appendChild(div);
+function renderEditor(node=tree, container=document.getElementById("editorContent")){
+    container.innerHTML="";
+    function createNodeDiv(n){
+        const div = document.createElement("div");
+        div.className="node";
 
-      if(n.yes) createNodeDiv(n.yes);
-      if(n.no) createNodeDiv(n.no);
+        if(n.question){
+            // Eingaben bearbeiten
+            const qDe = document.createElement("input");
+            qDe.value = n.question.de;
+            qDe.onchange = ()=>{ n.question.de=qDe.value; saveTree(); };
+            div.appendChild(qDe);
+
+            const qEn = document.createElement("input");
+            qEn.value = n.question.en;
+            qEn.onchange = ()=>{ n.question.en=qEn.value; saveTree(); };
+            div.appendChild(qEn);
+
+            const yesBtn = document.createElement("button");
+            yesBtn.textContent="Ja-Antwort hinzufügen";
+            yesBtn.onclick = ()=>{ n.yes={question:{de:"Neue Frage",en:"New question"}}; saveTree(); renderEditor(); };
+            div.appendChild(yesBtn);
+
+            const noBtn = document.createElement("button");
+            noBtn.textContent="Nein-Antwort hinzufügen";
+            noBtn.onclick = ()=>{ n.no={question:{de:"Neue Frage",en:"New question"}}; saveTree(); renderEditor(); };
+            div.appendChild(noBtn);
+
+        } else if(n.solution){
+            const sDe = document.createElement("input");
+            sDe.value = n.solution.de;
+            sDe.onchange = ()=>{ n.solution.de=sDe.value; saveTree(); };
+            div.appendChild(sDe);
+
+            const sEn = document.createElement("input");
+            sEn.value = n.solution.en;
+            sEn.onchange = ()=>{ n.solution.en=sEn.value; saveTree(); };
+            div.appendChild(sEn);
+        }
+
+        const addSol = document.createElement("button");
+        addSol.textContent="Lösung hinzufügen";
+        addSol.onclick = ()=>{ n.solution={de:"Neue Lösung",en:"New solution"}; saveTree(); renderEditor(); };
+        div.appendChild(addSol);
+
+        container.appendChild(div);
+
+        if(n.yes) createNodeDiv(n.yes);
+        if(n.no) createNodeDiv(n.no);
     }
     createNodeDiv(node);
-  }
+}
 
-  function addRootNode(){ tree = {question:{de:"Neue Kategorie",en:"New category"}}; saveTree(); renderEditor(); }
-  function saveTree(){ db.ref('tree').set(tree); }
+function addRootNode(){
+    tree = {question:{de:"Neue Kategorie",en:"New category"}};
+    saveTree();
+    renderEditor();
+}
 
+function saveTree(){ db.ref('tree').set(tree); }
 </script>
-
 </body>
 </html>
