@@ -80,14 +80,42 @@
   }
 </style>
 
-<!-- Firebase -->
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-  import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+<!-- Firebase compat Versionen -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-  // Your web app's Firebase configuration
+</head>
+<body>
+<div id="app">
+  <h1>Knowledgebase der Poolakademie.de</h1>
+
+  <div id="auth">
+    <h2>Anmelden / Registrieren</h2>
+    <input id="email" type="email" placeholder="E-Mail">
+    <input id="password" type="password" placeholder="Passwort">
+    <button onclick="login()">Anmelden</button>
+    <button onclick="register()">Registrieren</button>
+  </div>
+
+  <div id="treeContainer" style="display:none;">
+    <select id="language" onchange="renderCurrent()">
+      <option value="de">Deutsch</option>
+      <option value="en">English</option>
+    </select>
+    <div id="tree"></div>
+    <button onclick="goBack()">Zurück</button>
+  </div>
+
+  <div id="editor" style="display:none;">
+    <h2>Entwickler-Editor</h2>
+    <button onclick="addRootNode()">Neue Kategorie</button>
+    <div id="editorContent"></div>
+  </div>
+</div>
+
+<script>
+  // ----------------- Firebase Setup -----------------
   const firebaseConfig = {
     apiKey: "AIzaSyCldSSywGke3twOrve-beuJ4KKQqBaCMRo",
     authDomain: "poolakademie-knowledgebase.firebaseapp.com",
@@ -97,11 +125,9 @@
     appId: "1:907800259546:web:9e2cd30278ba36551caee3",
     databaseURL: "https://poolakademie-knowledgebase-default-rtdb.firebaseio.com"
   };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getDatabase(app);
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.database();
 
   let currentUser = null;
   let isAdmin = false;
@@ -109,7 +135,7 @@
   let path = [];
 
   // ----------------- Auth -----------------
-  onAuthStateChanged(auth, user => {
+  auth.onAuthStateChanged(user => {
     currentUser = user;
     if(user){
       if(user.email === "admin@poolakademie.de"){
@@ -131,7 +157,7 @@
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
     if(password.length < 6){ alert("Passwort mindestens 6 Zeichen"); return; }
-    createUserWithEmailAndPassword(auth, email, password)
+    auth.createUserWithEmailAndPassword(email,password)
       .then(() => alert("Registrierung erfolgreich!"))
       .catch(e => alert(e.message));
   }
@@ -139,7 +165,7 @@
   function login(){
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
-    signInWithEmailAndPassword(auth, email, password)
+    auth.signInWithEmailAndPassword(email,password)
       .catch(e => alert(e.message));
   }
 
@@ -150,7 +176,7 @@
   }
 
   function loadTree(){
-    get(child(ref(db), 'tree')).then(snap=>{
+    db.ref('tree').once('value').then(snap=>{
       tree = snap.val() || {question:{de:"Noch kein Baum",en:"No tree"}};
       path = [];
       renderCurrent();
@@ -198,7 +224,7 @@
   }
 
   function loadEditor(){
-    get(child(ref(db), 'tree')).then(snap=>{
+    db.ref('tree').once('value').then(snap=>{
       tree = snap.val() || {};
       renderEditor();
     });
@@ -206,7 +232,7 @@
 
   function renderEditor(node=tree, container=document.getElementById("editorContent")){
     container.innerHTML="";
-    function createNodeDiv(n,parent){
+    function createNodeDiv(n){
       const div = document.createElement("div");
       div.className="node";
 
@@ -251,14 +277,14 @@
 
       container.appendChild(div);
 
-      if(n.yes) createNodeDiv(n.yes,n);
-      if(n.no) createNodeDiv(n.no,n);
+      if(n.yes) createNodeDiv(n.yes);
+      if(n.no) createNodeDiv(n.no);
     }
-    createNodeDiv(node,null);
+    createNodeDiv(node);
   }
 
   function addRootNode(){ tree = {question:{de:"Neue Kategorie",en:"New category"}}; saveTree(); renderEditor(); }
-  function saveTree(){ set(ref(db,'tree'),tree); }
+  function saveTree(){ db.ref('tree').set(tree); }
 
 </script>
 
