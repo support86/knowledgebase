@@ -5,13 +5,14 @@
 <title>Knowledgebase der Poolakademie.de</title>
 <style>
 body { font-family: Arial; margin:0; padding:0; background:#f0f8ff; color:#003366; display:flex; justify-content:center; align-items:center; min-height:100vh; }
-#app { width:100%; max-width:800px; padding:20px; }
+#app { width:100%; max-width:900px; padding:20px; }
 h1,h2 { text-align:center; color:#0077c8; margin-top:0; }
 .node,.question,.solution { margin:10px 0; padding:10px; border-radius:8px; background:#e0f7ff; box-shadow:0 2px 5px rgba(0,0,0,0.2); text-align:center; }
 button { margin:5px; padding:6px 12px; border:none; border-radius:6px; background:#00b3b3; color:white; cursor:pointer; font-weight:bold; }
 button:hover { background:#007f7f; }
 input { padding:6px 8px; border-radius:5px; border:1px solid #0077c8; margin-bottom:10px; width:100%; max-width:300px; box-sizing:border-box; }
 </style>
+
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -29,6 +30,7 @@ input { padding:6px 8px; border-radius:5px; border:1px solid #0077c8; margin-bot
 </div>
 
 <div id="treeContainer" style="display:none;">
+<h2>Knowledgebase</h2>
 <div id="tree"></div>
 <button onclick="goBack()">Zurück</button>
 </div>
@@ -42,7 +44,7 @@ input { padding:6px 8px; border-radius:5px; border:1px solid #0077c8; margin-bot
 </div>
 
 <script>
-// Firebase Setup
+// ---------------- Firebase Setup ----------------
 const firebaseConfig = {
   apiKey: "AIzaSyCldSSywGke3twOrve-beuJ4KKQqBaCMRo",
   authDomain: "poolakademie-knowledgebase.firebaseapp.com",
@@ -56,12 +58,13 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
+// ---------------- Variablen ----------------
 let currentUser = null;
 let isAdmin = false;
 let tree = {};
 let path = [];
 
-// Auth
+// ---------------- Auth ----------------
 auth.onAuthStateChanged(user => {
     currentUser = user;
     if(user){
@@ -96,7 +99,7 @@ function login(){
       .catch(e=>alert(e.message));
 }
 
-// Endnutzer
+// ---------------- Endnutzer ----------------
 function showUser(){
     document.getElementById("treeContainer").style.display="block";
     loadTree();
@@ -104,7 +107,7 @@ function showUser(){
 
 function loadTree(){
     db.ref('tree').once('value').then(snap=>{
-        tree = snap.val() || {};
+        tree = snap.val() || {question:{de:"Start"}};
         path = [];
         renderCurrent();
     });
@@ -145,7 +148,7 @@ function goBack(){
     if(path.length>0){ path.pop(); renderCurrent(); }
 }
 
-// Admin Editor
+// ---------------- Admin Editor ----------------
 function showAdmin(){
     document.getElementById("editor").style.display="block";
     loadEditor();
@@ -153,7 +156,7 @@ function showAdmin(){
 
 function loadEditor(){
     db.ref('tree').once('value').then(snap=>{
-        tree = snap.val() || {};
+        tree = snap.val() || {question:{de:"Start"}};
         renderEditor();
     });
 }
