@@ -113,12 +113,25 @@
 
 <script>
   // ----------------- Firebase Setup -----------------
-  const firebaseConfig = {
-    apiKey: "DEINE_API_KEY",
-    authDomain: "DEIN_PROJECT_ID.firebaseapp.com",
-    databaseURL: "https://DEIN_PROJECT_ID.firebaseio.com",
-    projectId: "DEIN_PROJECT_ID",
-  };
+ // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyCldSSywGke3twOrve-beuJ4KKQqBaCMRo",
+  authDomain: "poolakademie-knowledgebase.firebaseapp.com",
+  projectId: "poolakademie-knowledgebase",
+  storageBucket: "poolakademie-knowledgebase.firebasestorage.app",
+  messagingSenderId: "907800259546",
+  appId: "1:907800259546:web:9e2cd30278ba36551caee3"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+  
+
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.database();
