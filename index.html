@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Knowledgebase Entscheidungsbaum</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .question { margin: 20px 0; }
+    button { margin: 5px; padding: 10px 15px; }
+  </style>
+</head>
+<body>
+  <h1>Knowledgebase</h1>
+  <div id="tree"></div>
+
+  <script>
+    const tree = {
+      question: "Hast du ein Problem mit dem Poolwasser?",
+      yes: {
+        question: "Ist das Wasser trüb?",
+        yes: { solution: "Lösung: Flockungsmittel verwenden" },
+        no: { solution: "Lösung: Chlorwert prüfen" }
+      },
+      no: {
+        solution: "Alles in Ordnung, keine Aktion nötig."
+      }
+    };
+
+    function render(node) {
+      const container = document.getElementById("tree");
+      container.innerHTML = "";
+      if (node.question) {
+        const q = document.createElement("div");
+        q.className = "question";
+        q.textContent = node.question;
+        container.appendChild(q);
+
+        const yesBtn = document.createElement("button");
+        yesBtn.textContent = "Ja";
+        yesBtn.onclick = () => render(node.yes);
+        container.appendChild(yesBtn);
+
+        const noBtn = document.createElement("button");
+        noBtn.textContent = "Nein";
+        noBtn.onclick = () => render(node.no);
+        container.appendChild(noBtn);
+      } else if (node.solution) {
+        const sol = document.createElement("div");
+        sol.textContent = node.solution;
+        container.appendChild(sol);
+      }
+    }
+
+    render(tree);
+  </script>
+</body>
+</html>
