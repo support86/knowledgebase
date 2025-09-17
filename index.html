@@ -5,64 +5,46 @@
 <title>Knowledgebase der Poolakademie.de</title>
 <style>
 body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background: #f0f8ff;
-    color: #003366;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+  font-family: Arial, sans-serif;
+  margin:0; padding:0;
+  background:#f0f8ff;
+  color:#003366;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
 }
 
-#app {
-    width: 100%;
-    max-width: 800px;
-    padding: 20px;
-    box-sizing: border-box;
-}
+#app { width:100%; max-width:800px; padding:20px; box-sizing:border-box; }
 
-h1, h2 {
-    margin-top: 0;
-    color: #0077c8;
-    text-align: center;
-}
+h1,h2 { text-align:center; color:#0077c8; margin-top:0; }
 
 .node, .question, .solution {
-    margin: 10px 0;
-    padding: 10px;
-    border-radius: 8px;
-    background: #e0f7ff;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    text-align: center;
+  margin:10px 0;
+  padding:10px;
+  border-radius:8px;
+  background:#e0f7ff;
+  box-shadow:0 2px 5px rgba(0,0,0,0.2);
+  text-align:center;
 }
 
 button {
-    margin: 5px;
-    padding: 6px 12px;
-    border: none;
-    border-radius: 6px;
-    background: #00b3b3;
-    color: white;
-    cursor: pointer;
-    font-weight: bold;
+  margin:5px;
+  padding:6px 12px;
+  border:none;
+  border-radius:6px;
+  background:#00b3b3;
+  color:white;
+  cursor:pointer;
+  font-weight:bold;
 }
 
-button:hover { background: #007f7f; }
+button:hover { background:#007f7f; }
 
-input, select {
-    padding: 6px 8px;
-    border-radius: 5px;
-    border: 1px solid #0077c8;
-    margin-bottom: 10px;
-    width: 100%;
-    max-width: 300px;
-    box-sizing: border-box;
-}
+input { padding:6px 8px; border-radius:5px; border:1px solid #0077c8; margin-bottom:10px; width:100%; max-width:300px; box-sizing:border-box; }
+
 </style>
 
-<!-- Firebase compat Versionen -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -81,10 +63,6 @@ input, select {
 </div>
 
 <div id="treeContainer" style="display:none;">
-<select id="language" onchange="renderCurrent()">
-<option value="de">Deutsch</option>
-<option value="en">English</option>
-</select>
 <div id="tree"></div>
 <button onclick="goBack()">Zurück</button>
 </div>
@@ -92,6 +70,7 @@ input, select {
 <div id="editor" style="display:none;">
 <h2>Entwickler-Editor</h2>
 <button onclick="addRootNode()">Neue Kategorie</button>
+<button onclick="saveTree()">Speichern</button>
 <div id="editorContent"></div>
 </div>
 </div>
@@ -120,7 +99,7 @@ let path = [];
 auth.onAuthStateChanged(user => {
     currentUser = user;
     if(user){
-        if(user.email === "admin@poolakademie.de"){
+        if(user.email === "admin@poolakademie.de" && document.getElementById("password").value === "admin."){
             isAdmin = true;
             showAdmin();
         } else {
@@ -166,33 +145,32 @@ function loadTree(){
 }
 
 function renderCurrent(){
-    const lang = document.getElementById("language").value;
     const container = document.getElementById("tree");
     container.innerHTML="";
     let node = tree;
     for(let i of path) node = node[i];
-
     if(!node) return;
 
     if(node.question){
         const q = document.createElement("div");
         q.className="question";
-        q.textContent = node.question[lang] || node.question["de"];
+        q.textContent = node.question.de;
         container.appendChild(q);
 
         const yesBtn = document.createElement("button");
-        yesBtn.textContent = lang==="de"?"Ja":"Yes";
+        yesBtn.textContent = "Ja";
         yesBtn.onclick = () => { path.push("yes"); renderCurrent(); };
         container.appendChild(yesBtn);
 
         const noBtn = document.createElement("button");
-        noBtn.textContent = lang==="de"?"Nein":"No";
+        noBtn.textContent = "Nein";
         noBtn.onclick = () => { path.push("no"); renderCurrent(); };
         container.appendChild(noBtn);
+
     } else if(node.solution){
         const sol = document.createElement("div");
         sol.className="solution";
-        sol.textContent = node.solution[lang] || node.solution["de"];
+        sol.textContent = node.solution.de;
         container.appendChild(sol);
     }
 }
@@ -201,7 +179,7 @@ function goBack(){
     if(path.length>0){ path.pop(); renderCurrent(); }
 }
 
-// Admin
+// Admin Editor
 function showAdmin(){
     document.getElementById("editor").style.display="block";
     loadEditor();
@@ -221,43 +199,32 @@ function renderEditor(node=tree, container=document.getElementById("editorConten
         div.className="node";
 
         if(n.question){
-            // Eingaben bearbeiten
-            const qDe = document.createElement("input");
-            qDe.value = n.question.de;
-            qDe.onchange = ()=>{ n.question.de=qDe.value; saveTree(); };
-            div.appendChild(qDe);
-
-            const qEn = document.createElement("input");
-            qEn.value = n.question.en;
-            qEn.onchange = ()=>{ n.question.en=qEn.value; saveTree(); };
-            div.appendChild(qEn);
+            const qInput = document.createElement("input");
+            qInput.value = n.question.de;
+            qInput.onchange = ()=>{ n.question.de=qInput.value; };
+            div.appendChild(qInput);
 
             const yesBtn = document.createElement("button");
             yesBtn.textContent="Ja-Antwort hinzufügen";
-            yesBtn.onclick = ()=>{ n.yes={question:{de:"Neue Frage",en:"New question"}}; saveTree(); renderEditor(); };
+            yesBtn.onclick = ()=>{ n.yes={question:{de:"Neue Frage"}}; renderEditor(); };
             div.appendChild(yesBtn);
 
             const noBtn = document.createElement("button");
             noBtn.textContent="Nein-Antwort hinzufügen";
-            noBtn.onclick = ()=>{ n.no={question:{de:"Neue Frage",en:"New question"}}; saveTree(); renderEditor(); };
+            noBtn.onclick = ()=>{ n.no={question:{de:"Neue Frage"}}; renderEditor(); };
             div.appendChild(noBtn);
 
         } else if(n.solution){
-            const sDe = document.createElement("input");
-            sDe.value = n.solution.de;
-            sDe.onchange = ()=>{ n.solution.de=sDe.value; saveTree(); };
-            div.appendChild(sDe);
-
-            const sEn = document.createElement("input");
-            sEn.value = n.solution.en;
-            sEn.onchange = ()=>{ n.solution.en=sEn.value; saveTree(); };
-            div.appendChild(sEn);
+            const sInput = document.createElement("input");
+            sInput.value = n.solution.de;
+            sInput.onchange = ()=>{ n.solution.de=sInput.value; };
+            div.appendChild(sInput);
         }
 
-        const addSol = document.createElement("button");
-        addSol.textContent="Lösung hinzufügen";
-        addSol.onclick = ()=>{ n.solution={de:"Neue Lösung",en:"New solution"}; saveTree(); renderEditor(); };
-        div.appendChild(addSol);
+        const addSolBtn = document.createElement("button");
+        addSolBtn.textContent="Lösung hinzufügen";
+        addSolBtn.onclick = ()=>{ n.solution={de:"Neue Lösung"}; renderEditor(); };
+        div.appendChild(addSolBtn);
 
         container.appendChild(div);
 
@@ -268,12 +235,14 @@ function renderEditor(node=tree, container=document.getElementById("editorConten
 }
 
 function addRootNode(){
-    tree = {question:{de:"Neue Kategorie",en:"New category"}};
-    saveTree();
+    tree = {question:{de:"Neue Kategorie"}};
     renderEditor();
 }
 
-function saveTree(){ db.ref('tree').set(tree); }
+function saveTree(){
+    db.ref('tree').set(tree);
+    alert("Änderungen gespeichert!");
+}
 </script>
 </body>
 </html>
