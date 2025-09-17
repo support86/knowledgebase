@@ -79,40 +79,15 @@
     box-sizing: border-box;
   }
 </style>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-</head>
-<body>
-<div id="app">
-  <h1>Knowledgebase der Poolakademie.de</h1>
 
-  <div id="auth">
-    <h2>Anmelden / Registrieren</h2>
-    <input id="email" type="email" placeholder="E-Mail">
-    <input id="password" type="password" placeholder="Passwort">
-    <button onclick="login()">Anmelden</button>
-    <button onclick="register()">Registrieren</button>
-  </div>
+<!-- Firebase -->
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+  import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-  <div id="treeContainer" style="display:none;">
-    <select id="language" onchange="renderCurrent()">
-      <option value="de">Deutsch</option>
-      <option value="en">English</option>
-    </select>
-    <div id="tree"></div>
-    <button onclick="goBack()">Zurück</button>
-  </div>
-
-  <div id="editor" style="display:none;">
-    <h2>Entwickler-Editor</h2>
-    <button onclick="addRootNode()">Neue Kategorie</button>
-    <div id="editorContent"></div>
-  </div>
-</div>
-
-<script>
-  // ----------------- Firebase Setup -----------------
+  // Your web app's Firebase configuration
   const firebaseConfig = {
     apiKey: "AIzaSyCldSSywGke3twOrve-beuJ4KKQqBaCMRo",
     authDomain: "poolakademie-knowledgebase.firebaseapp.com",
@@ -120,10 +95,13 @@
     storageBucket: "poolakademie-knowledgebase.firebasestorage.app",
     messagingSenderId: "907800259546",
     appId: "1:907800259546:web:9e2cd30278ba36551caee3",
+    databaseURL: "https://poolakademie-knowledgebase-default-rtdb.firebaseio.com"
   };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.database();
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
 
   let currentUser = null;
   let isAdmin = false;
@@ -131,10 +109,9 @@
   let path = [];
 
   // ----------------- Auth -----------------
-  auth.onAuthStateChanged(user => {
+  onAuthStateChanged(auth, user => {
     currentUser = user;
     if(user){
-      // Admin prüfen
       if(user.email === "admin@poolakademie.de"){
         isAdmin = true;
         showAdmin();
@@ -153,23 +130,17 @@
   function register(){
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
-    if(password.length < 6){
-      alert("Passwort muss mindestens 6 Zeichen haben!");
-      return;
-    }
-    auth.createUserWithEmailAndPassword(email,password)
-      .then(u => {
-        alert("Registrierung erfolgreich! Du kannst dich nun einloggen.");
-      })
-      .catch(error => alert(error.message));
+    if(password.length < 6){ alert("Passwort mindestens 6 Zeichen"); return; }
+    createUserWithEmailAndPassword(auth, email, password)
+      .then(() => alert("Registrierung erfolgreich!"))
+      .catch(e => alert(e.message));
   }
 
   function login(){
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
-    auth.signInWithEmailAndPassword(email,password)
-      .then(() => {})
-      .catch(error => alert(error.message));
+    signInWithEmailAndPassword(auth, email, password)
+      .catch(e => alert(e.message));
   }
 
   // ----------------- Endnutzer -----------------
@@ -179,7 +150,7 @@
   }
 
   function loadTree(){
-    db.ref('tree').once('value').then(snap=>{
+    get(child(ref(db), 'tree')).then(snap=>{
       tree = snap.val() || {question:{de:"Noch kein Baum",en:"No tree"}};
       path = [];
       renderCurrent();
@@ -218,9 +189,7 @@
     }
   }
 
-  function goBack(){
-    if(path.length>0){ path.pop(); renderCurrent(); }
-  }
+  function goBack(){ if(path.length>0){ path.pop(); renderCurrent(); } }
 
   // ----------------- Admin Editor -----------------
   function showAdmin(){
@@ -229,7 +198,7 @@
   }
 
   function loadEditor(){
-    db.ref('tree').once('value').then(snap=>{
+    get(child(ref(db), 'tree')).then(snap=>{
       tree = snap.val() || {};
       renderEditor();
     });
@@ -242,9 +211,16 @@
       div.className="node";
 
       if(n.question){
-        const q = document.createElement("div");
-        q.textContent = `Q: ${n.question.de} / ${n.question.en}`;
-        div.appendChild(q);
+        // Kategorie umbenennen
+        const qInputDe = document.createElement("input");
+        qInputDe.value = n.question.de;
+        qInputDe.onchange = () => { n.question.de = qInputDe.value; saveTree(); };
+        div.appendChild(qInputDe);
+
+        const qInputEn = document.createElement("input");
+        qInputEn.value = n.question.en;
+        qInputEn.onchange = () => { n.question.en = qInputEn.value; saveTree(); };
+        div.appendChild(qInputEn);
 
         const yesBtn = document.createElement("button");
         yesBtn.textContent="Ja-Antwort hinzufügen";
@@ -257,9 +233,15 @@
         div.appendChild(noBtn);
 
       } else if(n.solution){
-        const sol = document.createElement("div");
-        sol.textContent = `Solution: ${n.solution.de} / ${n.solution.en}`;
-        div.appendChild(sol);
+        const solInputDe = document.createElement("input");
+        solInputDe.value = n.solution.de;
+        solInputDe.onchange = () => { n.solution.de = solInputDe.value; saveTree(); };
+        div.appendChild(solInputDe);
+
+        const solInputEn = document.createElement("input");
+        solInputEn.value = n.solution.en;
+        solInputEn.onchange = () => { n.solution.en = solInputEn.value; saveTree(); };
+        div.appendChild(solInputEn);
       }
 
       const addSolBtn = document.createElement("button");
@@ -272,19 +254,13 @@
       if(n.yes) createNodeDiv(n.yes,n);
       if(n.no) createNodeDiv(n.no,n);
     }
-
     createNodeDiv(node,null);
   }
 
-  function addRootNode(){
-    tree = {question:{de:"Neue Kategorie",en:"New category"}};
-    saveTree();
-    renderEditor();
-  }
+  function addRootNode(){ tree = {question:{de:"Neue Kategorie",en:"New category"}}; saveTree(); renderEditor(); }
+  function saveTree(){ set(ref(db,'tree'),tree); }
 
-  function saveTree(){
-    db.ref('tree').set(tree);
-  }
 </script>
+
 </body>
 </html>
